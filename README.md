@@ -1,68 +1,54 @@
-# 🕵️ OSINT Investigation Tool
+# 🔍 Log Analyzer
 
-A Python CLI that pulls together open-source intelligence from
-multiple public sources: checking whether a username exists across
-common platforms, pulling WHOIS/DNS data for a domain, and validating
-email address format + domain activity.
-
-> ⚠️ **Ethics & legal note:** this tool only queries information that
-> is already public (public profile pages, public WHOIS records). It
-> does not log in, bypass authentication, or scrape private data. Use
-> it only on your own accounts/domains or as part of an authorized
-> investigation, and respect each platform's Terms of Service.
+A Python tool that parses security/auth-style logs, detects suspicious
+activity (repeated failed logins, brute-force patterns, invalid users,
+and — most critically — brute force attempts that are followed by a
+successful login), and generates a readable report in the terminal or
+as HTML.
 
 ## Why this project
 
-OSINT is a core skill in threat intelligence, incident response, and
-investigations. This shows you can pull structured signal from
-scattered public sources and automate the repetitive parts of that
-research.
+Reading raw logs by hand doesn't scale. This tool automates the first
+pass a SOC analyst or sysadmin would do: "what's suspicious in here,
+and what do I need to look at first?"
 
 ## Features
 
-- **Username check** — tests presence across 8 platforms (GitHub,
-  Twitter/X, Instagram, Reddit, LinkedIn, TikTok, Medium, GitLab)
-- **Domain investigation** — DNS resolution + WHOIS (registrar,
-  creation/expiration dates, name servers)
-- **Email validation** — format check + verifies the domain is active
-
-## Setup
-
-```bash
-pip install -r requirements.txt
-```
+- Parses standard `auth.log`-style lines (works with real syslog output)
+- Flags IPs with repeated failed login attempts (configurable threshold)
+- **Highlights the highest-risk case**: an IP that brute-forced logins
+  and then succeeded — a strong signal of a compromised account
+- Generates a clean HTML report for sharing, or plain text for the terminal
 
 ## Usage
 
 ```bash
-python osint_tool.py username johndoe123
-python osint_tool.py domain example.com
-python osint_tool.py email jdoe@example.com
+# Basic terminal report
+python log_analyzer.py sample_data/auth.log
+
+# Change the brute-force threshold (default: 4 failed attempts)
+python log_analyzer.py sample_data/auth.log --threshold 5
+
+# Also generate an HTML report
+python log_analyzer.py sample_data/auth.log --html report.html
 ```
 
 ## Example output
 
 ```
-Checking username 'johndoe123' across 8 platforms...
-
-  ✅ GitHub       FOUND      https://github.com/johndoe123
-  ❌ Twitter/X    not found  (status 404)
-  ✅ Reddit       FOUND      https://www.reddit.com/user/johndoe123
-  ...
-
-Summary: found on 2/8 checked platforms.
+🚨 HIGH PRIORITY: brute-force IP that later succeeded
+  🚨 185.220.101.5: 5 fails THEN a successful login — investigate immediately
 ```
 
 ## Skills demonstrated
 
-- OSINT methodology (multi-source public info gathering)
-- Python `requests` for HTTP-based reconnaissance
-- Basic DNS/WHOIS lookups
-- Working ethically with public data and clear scope boundaries
+- Python (argparse, regex, data structures)
+- Regex-based log parsing
+- Security log analysis / threat triage logic
 
 ## Possible extensions
 
-- Add more platforms (Pinterest, YouTube, Twitch, etc.)
-- Add breach-check integration (Have I Been Pwned API, with consent)
-- Export findings to a structured JSON/PDF investigation report
-- Add rate-limiting/backoff to be a good citizen of the platforms queried
+- Support JSON/CEF/Windows Event Log formats
+- Add geo-IP lookups for suspicious IPs
+- Send alerts to Slack/email when brute force is detected
+- Persist findings to a database for historical trend analysis
